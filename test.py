@@ -1,77 +1,146 @@
-import streamlit as st
-import random
+누나! 기다렸지? 좋아, 누나가 요청한 학습 계획 및 진도 관리 도우미 코드를 준비했어! 💻
 
-# 웹 페이지의 제목 설정
-st.title("🔢 재미있는 구구단 퀴즈!")
-st.write("2단부터 9단까지의 구구단 문제를 풀어보자! 🤔")
+이번에는 CSV 파일을 사용해서 학습 기록을 저장하고 불러오도록 했어. 이렇게 하면 앱을 껐다가 다시 켜도 기록이 사라지지 않고, 나중에 엑셀 같은 프로그램으로 열어봐서 데이터를 확인할 수도 있어서 편리해.
 
-# 세션 상태(Session State) 초기화
-# Streamlit 앱은 사용자 액션(버튼 클릭, 입력 등)이 있을 때마다 처음부터 다시 실행돼.
-# 그래서 변수들의 값을 유지하려면 'st.session_state'에 저장해야 해.
-if 'score' not in st.session_state:
-    st.session_state.score = 0  # 현재 맞힌 문제 수
-if 'question_count' not in st.session_state:
-    st.session_state.question_count = 0  # 총 문제 수
-if 'num1' not in st.session_state:
-    st.session_state.num1 = random.randint(2, 9) # 첫 번째 숫자 (단)
-if 'num2' not in st.session_state:
-    st.session_state.num2 = random.randint(2, 9) # 두 번째 숫자 (곱하는 수)
-if 'message' not in st.session_state:
-    st.session_state.message = "" # 사용자에게 보여줄 메시지
+코드가 길어 보일 수 있지만, 각 섹션별로 어떤 기능을 하는지 주석으로 자세히 설명해 두었으니 너무 걱정 마!
 
-# 현재 문제 표시
-st.write(f"### 문제: {st.session_state.num1} X {st.session_state.num2} = ?")
-
-# Streamlit Form을 사용하여 입력과 버튼을 묶음
-# Form을 사용하면 Submit 버튼 클릭 시에만 코드 블록이 실행되고 입력 필드가 자동으로 초기화돼!
-with st.form("quiz_form", clear_on_submit=True):
-    user_answer_str = st.text_input("정답을 입력해주세요:", key="answer_input_field")
-    submit_button = st.form_submit_button("정답 확인!")
-
-    # 폼이 제출되었을 때만 이 안의 로직이 실행돼.
-    if submit_button:
-        # 사용자가 정답 확인 버튼을 누르면 문제 수 증가
-        st.session_state.question_count += 1
-        
-        try:
-            user_answer = int(user_answer_str) # 사용자가 입력한 문자열을 숫자로 변환
-
-            # 정답 확인 로직
-            if user_answer == st.session_state.num1 * st.session_state.num2:
-                st.session_state.message = "정답입니다! 🎉 다음 문제도 풀어볼까?"
-                st.session_state.score += 1 # 점수 1 증가
-            else:
-                st.session_state.message = (
-                    f"아쉽지만 오답이에요. 😥 정답은 {st.session_state.num1 * st.session_state.num2}입니다. 다시 도전!"
-                )
-        except ValueError: # 사용자가 숫자가 아닌 다른 것을 입력했을 때
-            st.session_state.message = "💡 숫자를 입력해주세요! 다시 시도해봐."
-        
-        # 새로운 문제 출제 (폼 제출 후 새로운 문제로 업데이트)
-        st.session_state.num1 = random.randint(2, 9)
-        st.session_state.num2 = random.randint(2, 9)
-        # 중요: `st.text_input`의 `key`를 그대로 두면, 폼 제출 시 자동으로 초기화돼!
+python
 
 
-# 사용자에게 결과 메시지 표시
-if st.session_state.message:
-    # 메시지에 따라 색깔을 다르게 보여줄 수도 있어!
-    if "정답입니다!" in st.session_state.message:
-        st.success(st.session_state.message)
-    elif "오답이에요" in st.session_state.message:
-        st.error(st.session_state.message)
-    else: # 숫자가 아닌 경우 등 경고 메시지
-        st.warning(st.session_state.message)
+import streamlit as st # Streamlit 라이브러리
+import pandas as pd     # 데이터 처리를 위한 Pandas 라이브러리
+from datetime import datetime, date # 날짜 및 시간 처리를 위한 datetime 모듈
+import os               # 파일 시스템 관련 작업을 위한 OS 모듈
+import matplotlib.pyplot as plt # Matplotlib (시각화)
+import plotly.express as px     # Plotly Express (더 예쁜 시각화)
 
-# 현재 점수 표시
-st.markdown("---") # 구분선
-st.write(f"**현재 점수: {st.session_state.score} / {st.session_state.question_count} 문제**")
+# --- ⚙️ 설정 (Configuration) ---
+# 학습 기록을 저장할 CSV 파일 이름
+DATA_FILE = "study_records.csv"
 
-# 초기화 버튼
-if st.button("🔄 퀴즈 초기화"):
-    st.session_state.score = 0
-    st.session_state.question_count = 0
-    st.session_state.num1 = random.randint(2, 9)
-    st.session_state.num2 = random.randint(2, 9)
-    st.session_state.message = "" # 메시지도 초기화
-    st.rerun() # 전체 앱을 다시 실행하여 초기 상태로 돌아감
+# --- 💾 데이터 로드 및 저장 함수 (Data Load/Save Functions) ---
+
+# st.cache_data는 함수 결과를 캐시해서, 입력이 같으면 다시 실행하지 않고 캐시된 결과를 사용해 성능을 높여줘!
+@st.cache_data 
+def load_data():
+    """CSV 파일에서 학습 기록을 로드합니다."""
+    if os.path.exists(DATA_FILE): # 파일이 존재하면
+        df = pd.read_csv(DATA_FILE)
+        # '날짜' 컬럼을 datetime 객체로 변환하고 시간 정보는 제거해서 '날짜'만 남김
+        df['날짜'] = pd.to_datetime(df['날짜']).dt.date 
+        return df
+    # 파일이 없으면 빈 데이터프레임 반환 (컬럼 정의)
+    return pd.DataFrame(columns=['날짜', '과목', '학습_시간_분', '학습_내용'])
+
+def save_data(df):
+    """학습 기록 DataFrame을 CSV 파일에 저장합니다."""
+    # 저장 전에 '날짜' 컬럼을 문자열로 변환 (datetime.date 객체는 CSV에 바로 저장하기 어려움)
+    df['날짜'] = df['날짜'].astype(str) 
+    df.to_csv(DATA_FILE, index=False) # CSV로 저장 (인덱스는 저장하지 않음)
+    # 캐시 무효화 (데이터가 변경되었으니 다음번엔 새로 로드하도록)
+    load_data.clear() 
+
+# --- 🚀 Streamlit 앱 시작 (Streamlit App Start) ---
+st.title("📚 나만의 학습 플래너")
+st.write("매일의 학습 기록을 남기고, 진도를 한눈에 확인해보세요! \n\n이 앱은 여러분의 학습 기록을 `study_records.csv` 파일에 저장합니다.")
+
+# 세션 상태(st.session_state)에 데이터프레임을 초기화. 
+# 앱이 재실행되어도 'study_data'가 있으면 다시 로드하지 않아!
+if 'study_data' not in st.session_state:
+    st.session_state.study_data = load_data()
+
+# --- 📝 새 학습 기록 입력 폼 (Input Form for Study Records) ---
+st.header("📝 새 학습 기록 추가")
+
+# Streamlit Form을 사용하여 입력과 버튼을 묶으면, Submit 버튼 클릭 시에만 코드 블록이 실행돼!
+# clear_on_submit=True를 사용하면 폼 제출 후 입력 필드가 자동으로 비워져서 편리해!
+with st.form("study_record_form", clear_on_submit=True):
+    # 날짜 입력 위젯 (기본값은 오늘 날짜)
+    record_date = st.date_input("날짜", value=date.today())
+    # 과목 입력 (텍스트)
+    subject = st.text_input("과목 (예: 교육학, 수학, 영어)")
+    # 학습 시간 입력 (분 단위)
+    study_time_minutes = st.number_input("학습 시간 (분)", min_value=0, value=60, step=10)
+    # 학습 내용 입력 (여러 줄 텍스트)
+    study_content = st.text_area("학습 내용 / 진도")
+
+    # 폼 제출 버튼
+    submitted = st.form_submit_button("기록 추가하기")
+
+    if submitted:
+        if subject and study_time_minutes > 0: # 과목과 학습 시간이 제대로 입력되었는지 확인
+            # 새로운 학습 기록 데이터 생성
+            new_record = pd.DataFrame([{
+                '날짜': record_date,
+                '과목': subject,
+                '학습_시간_분': study_time_minutes,
+                '학습_내용': study_content
+            }])
+            # 기존 데이터프레임에 새로운 기록 추가 (concat은 새로운 데이터프레임을 반환)
+            st.session_state.study_data = pd.concat([st.session_state.study_data, new_record], ignore_index=True)
+            # 변경된 데이터프레임을 CSV 파일에 저장
+            save_data(st.session_state.study_data)
+            st.success("새 학습 기록이 추가되었습니다! ✨")
+        else:
+            st.warning("과목과 학습 시간(분)을 입력해주세요. 🧐")
+
+# --- 📊 학습 현황 및 통계 (Study Status and Statistics) ---
+st.header("📊 나의 학습 현황")
+
+# 현재 학습 기록이 비어있는지 확인
+if st.session_state.study_data.empty:
+    st.info("아직 학습 기록이 없네요. 위에 '새 학습 기록 추가'에서 기록을 남겨보세요! 🏃‍♀️")
+else:
+    # --- 전체 학습 기록 테이블 ---
+    st.subheader("모든 학습 기록")
+    # 최신 기록부터 보여주기 위해 날짜 내림차순 정렬
+    sorted_df = st.session_state.study_data.sort_values(by='날짜', ascending=False)
+    # 데이터프레임을 Streamlit에 표시 (인덱스 숨김)
+    st.dataframe(sorted_df, hide_index=True)
+
+    # --- 총 학습 시간 ---
+    total_study_time_minutes = st.session_state.study_data['학습_시간_분'].sum()
+    st.markdown(f"### 총 학습 시간: {total_study_time_minutes}분 ({total_study_time_minutes // 60}시간 {total_study_time_minutes % 60}분)")
+
+    # --- 일별 학습 시간 ---
+    st.subheader("일별 학습 시간 트렌드")
+    # 날짜별로 학습 시간을 그룹화하고 합계 계산
+    daily_summary = st.session_state.study_data.groupby('날짜')['학습_시간_분'].sum().reset_index()
+    daily_summary.columns = ['날짜', '총_학습_시간_분']
+    
+    # Plotly를 사용하여 선 그래프 생성 (더 인터랙티브하고 예뻐!)
+    fig_daily = px.line(daily_summary, x='날짜', y='총_학습_시간_분', 
+                        title='날짜별 총 학습 시간', 
+                        labels={'날짜': '날짜', '총_학습_시간_분': '학습 시간 (분)'},
+                        markers=True) # 각 데이터 포인트에 마커 표시
+    st.plotly_chart(fig_daily)
+
+    # --- 과목별 학습 시간 ---
+    st.subheader("과목별 학습 시간")
+    # 과목별로 학습 시간을 그룹화하고 합계 계산
+    subject_summary = st.session_state.study_data.groupby('과목')['학습_시간_분'].sum().reset_index()
+    subject_summary.columns = ['과목', '총_학습_시간_분']
+    
+    # Plotly를 사용하여 막대 그래프 생성 (과목별 시간 비교)
+    fig_subject = px.bar(subject_summary, x='과목', y='총_학습_시간_분', 
+                         title='과목별 총 학습 시간', 
+                         labels={'과목': '과목', '총_학습_시간_분': '학습 시간 (분)'},
+                         color='과목') # 과목별로 다른 색상 적용
+    st.plotly_chart(fig_subject)
+
+# --- 🗑️ 모든 기록 삭제 버튼 (주의!) ---
+st.markdown("---")
+st.subheader("위험 구역")
+if st.button("🚨 모든 학습 기록 삭제 (복구 불가!)"):
+    # 사용자에게 한 번 더 확인 받기
+    st.warning("정말 모든 기록을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다!")
+    # '확인' 버튼을 눌러야 실제 삭제 진행
+    if st.button("네, 모든 기록을 삭제합니다"):
+        if os.path.exists(DATA_FILE):
+            os.remove(DATA_FILE) # 파일 삭제
+            st.session_state.study_data = pd.DataFrame(columns=['날짜', '과목', '학습_시간_분', '학습_내용']) # 데이터프레임 초기화
+            load_data.clear() # 캐시 무효화
+            st.rerun() # 앱 다시 로드하여 변경 사항 적용
+        st.success("모든 학습 기록이 삭제되었습니다. 🗑️")
+    else:
+        st.info("삭제가 취소되었습니다. 휴~ 다행이야! 😊")
