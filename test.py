@@ -1,7 +1,28 @@
-
-
 import streamlit as st
-import datetime # 이 부분을 추가했습니다!
+import datetime
+import json # json 모듈을 추가합니다!
+import os   # 파일 경로를 다루기 위해 os 모듈을 추가합니다!
+
+# --- 0. 독후감 파일 설정 ---
+# 독후감이 저장될 파일 이름을 정합니다. (예: reviews.json)
+REVIEWS_FILE = "reviews.json"
+
+# --- 0-1. 독후감 파일 로드/저장 함수 ---
+def load_reviews():
+    """reviews.json 파일에서 독후감 목록을 불러옵니다."""
+    if os.path.exists(REVIEWS_FILE):
+        with open(REVIEWS_FILE, "r", encoding="utf-8") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                # 파일이 비어있거나 JSON 형식이 아닐 경우 빈 리스트 반환
+                return []
+    return []
+
+def save_reviews(reviews_list):
+    """독후감 목록을 reviews.json 파일에 저장합니다."""
+    with open(REVIEWS_FILE, "w", encoding="utf-8") as f:
+        json.dump(reviews_list, f, ensure_ascii=False, indent=4)
 
 # --- 1. 앱 기본 설정 ---
 st.set_page_config(
@@ -13,11 +34,12 @@ st.set_page_config(
 st.title("📚 학년별 추천 도서 & 독후감 공유 플랫폼")
 st.write("📖 우리 함께 좋은 책을 읽고 생각을 나눠봐요!")
 
-# --- 2. 독후감 저장을 위한 세션 상태 초기화 ---
+# --- 2. 독후감 저장을 위한 세션 상태 초기화 (수정) ---
+# 앱 시작 시 파일에서 기존 독후감을 불러와 st.session_state에 저장합니다.
 if 'reviews' not in st.session_state:
-    st.session_state.reviews = []
+    st.session_state.reviews = load_reviews()
 
-# --- 3. 학년별 추천 도서 데이터 ---
+# --- 3. 학년별 추천 도서 데이터 (기존과 동일) ---
 recommended_books = {
     "1학년": [
         {"제목": "강아지 똥", "저자": "권정생", "설명": "작고 보잘것없는 강아지 똥이 민들레를 피워내는 감동적인 이야기입니다. 생명의 소중함과 보잘것없어 보이는 존재의 가치를 깨닫게 해 줍니다."},
@@ -69,20 +91,19 @@ recommended_books = {
     ]
 }
 
-# --- 4. 추천 도서 섹션 ---
+# --- 4. 추천 도서 섹션 (기존과 동일) ---
 st.header("💡 학년별 추천 도서 둘러보기")
 selected_grade = st.selectbox("어떤 학년의 추천 도서를 보고 싶나요?", list(recommended_books.keys()))
 
 st.markdown(f"### {selected_grade} 친구들에게 추천하는 도서예요!")
 
-# 선택된 학년에 해당하는 책들을 표시
 for book in recommended_books[selected_grade]:
     with st.expander(f"📚 {book['제목']} - {book['저자']}"):
         st.write(f"**📖 작가:** {book['저자']}")
         st.write(f"**📝 내용:** {book['설명']}")
         st.write("---")
 
-# --- 5. 독후감 작성 섹션 ---
+# --- 5. 독후감 작성 섹션 (수정) ---
 st.header("✍️ 나만의 독후감 작성하기")
 st.write("읽은 책에 대한 생각을 자유롭게 나누어주세요!")
 
@@ -98,18 +119,19 @@ with st.form("book_review_form", clear_on_submit=True):
                 "제목": review_book_title,
                 "저자": review_author,
                 "내용": review_content,
-                # 이 부분을 수정했습니다!
                 "시간": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "이름": "익명 참여자"
             })
+            # 독후감 제출 후 파일에 저장하는 함수 호출!
+            save_reviews(st.session_state.reviews)
             st.success("독후감이 성공적으로 제출되었어요! ✨")
         else:
             st.warning("모든 필드를 채워주세요! (책 제목, 저자, 내용)")
 
-# --- 6. 모두의 독후감 섹션 ---
+# --- 6. 모두의 독후감 섹션 (기존과 동일) ---
 st.header("📢 모두의 독후감")
 if st.session_state.reviews:
-    for i, review in enumerate(reversed(st.session_state.reviews)):
+    for review in reversed(st.session_state.reviews):
         st.markdown(f"**✨ {review['제목']}** - {review['저자']}")
         st.write(f"_{review['이름']} (작성 시간: {review['시간']})_")
         st.info(review['내용'])
@@ -123,4 +145,4 @@ st.sidebar.markdown("### 정보")
 st.sidebar.write("이 웹 앱은 교육 목적의 프로젝트입니다.")
 st.sidebar.write("궁금한 점이 있다면 언제든지 문의하세요!")
 st.sidebar.markdown("---")
-st.sidebar.write("Made with Streamlit. ")
+st.sidebar.write("Made with Streamlit. 😊")
