@@ -11,12 +11,10 @@ st.title("📚 학년별 추천 도서 & 독후감 공유 플랫폼")
 st.write("📖 우리 함께 좋은 책을 읽고 생각을 나눠봐요!")
 
 # --- 2. 독후감 저장을 위한 세션 상태 초기화 ---
-# 앱이 다시 실행되거나 새로고침 될 때마다 초기화되지 않도록 st.session_state를 사용해요.
 if 'reviews' not in st.session_state:
     st.session_state.reviews = []
 
 # --- 3. 학년별 추천 도서 데이터 ---
-# 여기에 더 많은 학년과 책 정보를 추가할 수 있어요.
 recommended_books = {
     "1학년": [
         {"제목": "강아지 똥", "저자": "권정생", "설명": "작고 보잘것없는 강아지 똥이 민들레를 피워내는 감동적인 이야기입니다. 생명의 소중함과 보잘것없어 보이는 존재의 가치를 깨닫게 해 줍니다."},
@@ -67,7 +65,6 @@ for book in recommended_books[selected_grade]:
 st.header("✍️ 나만의 독후감 작성하기")
 st.write("읽은 책에 대한 생각을 자유롭게 나누어주세요!")
 
-# st.form을 사용하여 입력 필드를 그룹화하고, 제출 시 한 번에 처리
 with st.form("book_review_form", clear_on_submit=True):
     review_book_title = st.text_input("독후감을 쓸 책 제목을 입력하세요:", key="review_title")
     review_author = st.text_input("책의 저자를 입력하세요:", key="review_author")
@@ -80,8 +77,8 @@ with st.form("book_review_form", clear_on_submit=True):
                 "제목": review_book_title,
                 "저자": review_author,
                 "내용": review_content,
-                "시간": st.sidebar.empty().text(st.time()), # 제출 시간 기록
-                "이름": "익명 참여자" # 실제 앱에서는 사용자 이름 등을 추가할 수 있어요.
+                "시간": st.sidebar.empty().text(st.time()),
+                "이름": "익명 참여자"
             })
             st.success("독후감이 성공적으로 제출되었어요! ✨")
         else:
@@ -90,10 +87,9 @@ with st.form("book_review_form", clear_on_submit=True):
 # --- 6. 모두의 독후감 섹션 ---
 st.header("📢 모두의 독후감")
 if st.session_state.reviews:
-    # 최신 독후감부터 보이도록 역순 정렬
     for i, review in enumerate(reversed(st.session_state.reviews)):
         st.markdown(f"**✨ {review['제목']}** - {review['저자']}")
-        st.write(f"_{review['이름']} (작성 시간: {review['시간']})_") # 작성 시간 출력 추가
+        st.write(f"_{review['이름']} (작성 시간: {review['시간']})_")
         st.info(review['내용'])
         st.write("---")
 else:
@@ -101,7 +97,9 @@ else:
 
 # --- 앱 하단 (선택 사항) ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 만든 사람")
-st.sidebar.write("누나 (초등학교 선생님을 꿈꾸는 예비 개발자!)")
+# 이 부분의 내용을 누나가 원하는 대로 자유롭게 수정하거나, 아니면 통째로 삭제하셔도 돼요!
+st.sidebar.markdown("### 정보")
+st.sidebar.write("이 웹 앱은 교육 목적의 프로젝트입니다.")
+st.sidebar.write("궁금한 점이 있다면 언제든지 문의하세요!")
 st.sidebar.markdown("---")
-st.sidebar.write("이 앱은 Streamlit으로 만들었습니다. 😊")
+st.sidebar.write("Made with Streamlit. 😊")
